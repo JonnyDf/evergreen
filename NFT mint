@@ -1,0 +1,46 @@
+from web3 import Web3
+from web3.middleware import geth_poa_middleware
+
+# Configure the Ethereum node URL
+eth_node_url = "https://mainnet.infura.io/v3/YOUR_INFURA_API_KEY"  # Replace with your Infura API key
+
+# Replace the following variables with your wallet's private key and contract details
+wallet_private_key = "YOUR_WALLET_PRIVATE_KEY"
+contract_address = "YOUR_NFT_CONTRACT_ADDRESS"
+
+def mint_nft(token_uri):
+    w3 = Web3(Web3.HTTPProvider(eth_node_url))
+    w3.middleware_stack.inject(geth_poa_middleware, layer=0)
+
+    # Connect to the wallet
+    wallet = w3.eth.account.privateKeyToAccount(wallet_private_key)
+
+    # Load the contract ABI and create a contract instance
+    with open("YourNFTContractABI.json", "r") as abi_file:
+        abi = json.load(abi_file)
+        contract = w3.eth.contract(address=contract_address, abi=abi)
+
+    # Construct the transaction
+    nonce = w3.eth.getTransactionCount(wallet.address)
+    gas_price = w3.eth.gas_price
+
+    transaction = contract.functions.mintNFT(wallet.address, token_uri).buildTransaction({
+        'from': wallet.address,
+        'gas': 200000,
+        'gasPrice': gas_price,
+        'nonce': nonce,
+    })
+
+    # Sign the transaction
+    signed_transaction = w3.eth.account.sign_transaction(transaction, wallet_private_key)
+
+    # Send the transaction
+    transaction_hash = w3.eth.sendRawTransaction(signed_transaction.rawTransaction)
+
+    print(f"NFT minted successfully! Transaction Hash: {transaction_hash.hex()}")
+
+if __name__ == "__main__":
+    # Replace with the URI for the metadata associated with the NFT
+    token_uri = "https://example.com/metadata/123"
+
+    mint_nft(token_uri)
